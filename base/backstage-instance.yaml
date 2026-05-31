@@ -22,3 +22,17 @@ spec:
       enabled: true
   database:
     enableLocalDb: true
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            containers:
+              - command:
+                  - adt
+                  - server
+                image: 'quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-1779106965'
+                imagePullPolicy: Always
+                ports:
+                  - containerPort: 8000
+                    protocol: TCP

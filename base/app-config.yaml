@@ -38,8 +38,13 @@ data:
                 - resolver: emailLocalPartMatchingUserEntityName
 
     catalog:
+      locations:
+        - type: url
+          target: https://github.com/ansible/ansible-rhdh-templates/blob/main/all.yaml
+          rules:
+            - allow: [Template]
       rules:
-        - allow: [Component, System, API, Resource, Location, User, Group]
+        - allow: [Component, System, API, Resource, Location, User, Group, Template]
       providers:
         keycloakOrg:
           default:
@@ -62,3 +67,11 @@ data:
           users:
             - name: user:default/admin
         policies-csv-file: /opt/app-root/src/rbac-policy.csv
+    ansible:
+      creatorService:
+        baseUrl: 127.0.0.1
+        port: '8000'
+      rhaap:
+        baseUrl: 'https://MyControllerUrl'
+        token: '<AAP Personal Access Token>'
+        checkSSL: true
