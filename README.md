@@ -130,7 +130,53 @@ oc get route -n ${NAMESPACE}
 
 ## 🔧 Configuration Keycloak
 
-Assurez-vous d'avoir importer la configuration du royaume `rhdh` dans Keycloak via le fichier `keycloak-rhdh-realm-simple.json`.
+### Import du Realm RHDH
+
+Le fichier `keycloak-rhdh-realm-simple.json` contient une configuration complète pour RHDH incluant :
+- Un realm `rhdh` pré-configuré
+- Un utilisateur admin de test
+- Un client OIDC `rhdh` avec les bons paramètres
+- Un service account pour la synchronisation des utilisateurs
+
+**Pour importer le realm dans Keycloak :**
+
+1. Connectez-vous à la console admin Keycloak (voir [repo rhbk](https://github.com/atiouajni/rhbk) pour déployer Keycloak)
+2. Dans le menu déroulant des realms (en haut à gauche), cliquez sur **"Create Realm"**
+3. Cliquez sur **"Browse"** pour sélectionner le fichier `keycloak-rhdh-realm-simple.json`
+4. Cliquez sur **"Create"**
+
+### Credentials créés par l'import
+
+#### Utilisateur Admin (pour tester RHDH)
+- **Username:** `admin`
+- **Password:** `admin123`
+- **Email:** `admin@example.com`
+- **Nom complet:** Admin User
+
+#### Client OIDC
+- **Client ID:** `rhdh`
+- **Client Secret:** `my-new-rhdh-secret-12345`
+- **Redirect URIs:** `*` (configuré pour accepter toutes les URLs)
+
+⚠️ **IMPORTANT - Sécurité :**
+- Ces credentials sont pour **DEV/TEST uniquement**
+- En production :
+  - Changez le mot de passe admin
+  - Générez un nouveau client secret : `openssl rand -base64 32`
+  - Configurez des redirect URIs spécifiques (pas `*`)
+  - Activez la protection contre les attaques par force brute
+  - Utilisez des certificats TLS valides
+
+### Service Account
+
+Un service account `service-account-rhdh` est automatiquement créé avec les permissions suivantes :
+- `view-users` : Lecture des utilisateurs
+- `view-clients` : Lecture des clients
+- `view-realm` : Lecture du realm
+- `query-users` : Requêtes sur les utilisateurs
+- `query-groups` : Requêtes sur les groupes
+
+Ce compte permet à RHDH de synchroniser automatiquement les utilisateurs et groupes depuis Keycloak.
 
 ## 📝 Variables d'environnement
 
