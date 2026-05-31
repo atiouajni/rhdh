@@ -10,6 +10,9 @@ Ce dépôt contient les manifests Kubernetes pour déployer Red Hat Developer Hu
 - ✅ Plugins dynamiques :
   - Keycloak Catalog Backend Module
   - RBAC Plugin
+  - **Ansible Automation Platform Plugin** (branche `rhdh-oidc-ansible`)
+- ✅ Templates Ansible depuis GitHub (`ansible/ansible-rhdh-templates`)
+- ✅ Ansible Dev Tools en sidecar pour le creator service
 - ✅ Base de données locale (PostgreSQL embarqué)
 - ✅ Route OpenShift automatique
 
@@ -18,6 +21,50 @@ Ce dépôt contient les manifests Kubernetes pour déployer Red Hat Developer Hu
 - OpenShift: 4.21.6
 - RHDH Operator: 1.9.4
 - RHBK (pour l'authentification): 26.4.12-opr.1
+
+## 🐳 Images Container et Registry Publique
+
+Pour éviter d'avoir à gérer l'authentification au registry Red Hat (`registry.redhat.io`) sur le cluster OpenShift, les images nécessaires pour le plugin Ansible Automation Platform ont été copiées vers une registry publique (Quay.io).
+
+### Images utilisées
+
+| Image Red Hat (source)                                                                                   | Image publique (destination)                                            | Usage                          |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------ |
+| `registry.redhat.io/ansible-automation-platform/automation-portal:2.2.0-1779723113`                      | `quay.io/atiouajn/automation-portal:2.2.0-1779723113`                   | Portail Ansible (non utilisé)  |
+| `registry.redhat.io/ansible-automation-platform-27/ansible-dev-tools-rhel9:26.4.6-1779106965` | `quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-1779106965` | Ansible Dev Tools (sidecar)    |
+
+### Comment copier les images
+
+Si vous devez copier d'autres images Red Hat vers votre propre registry publique, suivez cette procédure :
+
+```bash
+# 1. S'authentifier au registry Red Hat (nécessite un compte Red Hat)
+podman login registry.redhat.io
+
+# 2. Copier l'image (architecture linux/amd64)
+podman pull --platform linux/amd64 registry.redhat.io/IMAGE_SOURCE:TAG
+podman tag registry.redhat.io/IMAGE_SOURCE:TAG quay.io/VOTRE_ORG/IMAGE_NAME:TAG
+podman push --remove-signatures quay.io/VOTRE_ORG/IMAGE_NAME:TAG
+```
+
+**Exemple concret :**
+
+```bash
+# Copier ansible-dev-tools
+podman pull --platform linux/amd64 registry.redhat.io/ansible-automation-platform-27/ansible-dev-tools-rhel9:26.4.6-1779106965
+podman tag registry.redhat.io/ansible-automation-platform-27/ansible-dev-tools-rhel9:26.4.6-1779106965 quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-1779106965
+podman push --remove-signatures quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-1779106965
+```
+
+**Notes importantes :**
+- `--platform linux/amd64` : Force l'architecture compatible avec OpenShift
+- `--remove-signatures` : Nécessaire car les signatures Red Hat ne peuvent pas être transférées
+- Les images doivent être rendues **publiques** sur Quay.io pour éviter de configurer des pull secrets
+
+⚠️ **Considérations de licence :**
+- Assurez-vous d'avoir le droit d'utiliser ces images selon votre abonnement Red Hat
+- Cette approche est recommandée pour les environnements de dev/test
+- En production, utilisez plutôt des pull secrets configurés sur le cluster
 
 ## 📁 Structure
 
@@ -177,6 +224,65 @@ Un service account `service-account-rhdh` est automatiquement créé avec les pe
 - `query-groups` : Requêtes sur les groupes
 
 Ce compte permet à RHDH de synchroniser automatiquement les utilisateurs et groupes depuis Keycloak.
+
+## 🤖 Plugin Ansible Automation Platform
+
+Le plugin Ansible AAP est configuré sur la branche `rhdh-oidc-ansible` et permet de créer des playbooks Ansible directement depuis RHDH.
+
+### Configuration du plugin
+
+La configuration inclut :
+
+1. **Templates Ansible depuis GitHub** :
+   - Location: `https://github.com/ansible/ansible-rhdh-templates/blob/main/all.yaml`
+   - Types autorisés: `Template`
+
+2. **Ansible Dev Tools en sidecar** :
+   - Image: `quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-1779106965`
+   - Service exposé sur le port `8000`
+   - Commande: `adt server`
+
+3. **Configuration AAP** :
+   ```yaml
+   ansible:
+     creatorService:
+       baseUrl: 127.0.0.1
+       port: '8000'
+     rhaap:
+       baseUrl: '<https://MyControllerUrl>'
+       token: '<AAP Personal Access Token>'
+       checkSSL: true
+   ```
+
+### Utiliser le plugin Ansible
+
+1. Checkout de la branche avec le plugin :
+   ```bash
+   git checkout rhdh-oidc-ansible
+   ```
+
+2. Installer/mettre à jour RHDH :
+   ```bash
+   source .env
+   ./install.sh
+   ```
+
+3. Accéder aux templates Ansible :
+   - Ouvrir RHDH dans votre navigateur
+   - Naviguer vers "Create" dans le menu
+   - Les templates Ansible apparaîtront dans la liste
+
+### Personnalisation
+
+Pour utiliser votre propre instance AAP, modifiez les valeurs dans `base/app-config.yaml` :
+
+```yaml
+ansible:
+  rhaap:
+    baseUrl: 'https://votre-controller.example.com'
+    token: 'votre-token-aap'
+    checkSSL: true
+```
 
 ## 📝 Variables d'environnement
 
