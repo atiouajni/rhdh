@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rbac-policy
+  namespace: ${NAMESPACE}
+data:
+  rbac-policy.csv: |
+    # Admin role - Full permissions
+    # Catalog permissions
+    p, role:default/admin, catalog-entity, read, allow
+    p, role:default/admin, catalog-entity, create, allow
+    p, role:default/admin, catalog-entity, update, allow
+    p, role:default/admin, catalog-entity, delete, allow
+    p, role:default/admin, catalog.entity.create, create, allow
+    p, role:default/admin, catalog.entity.read, read, allow
+    p, role:default/admin, catalog.entity.refresh, update, allow
+    p, role:default/admin, catalog.location.create, create, allow
+    p, role:default/admin, catalog.location.read, read, allow
+    p, role:default/admin, catalog.location.delete, delete, allow
+
+    # Scaffolder permissions
+    p, role:default/admin, scaffolder-template, read, allow
+    p, role:default/admin, scaffolder-template, create, allow
+    p, role:default/admin, scaffolder-template, update, allow
+    p, role:default/admin, scaffolder-template, delete, allow
+    p, role:default/admin, scaffolder-action, use, allow
+    p, role:default/admin, scaffolder.action.execute, use, allow
+    p, role:default/admin, scaffolder.task.create, create, allow
+    p, role:default/admin, scaffolder.task.read, read, allow
+    p, role:default/admin, scaffolder.task.cancel, delete, allow
+
+    # Kubernetes permissions
+    p, role:default/admin, kubernetes.proxy, use, allow
+    p, role:default/admin, kubernetes-cluster, read, allow
+
+    # RBAC permissions (admin can manage RBAC itself)
+    p, role:default/admin, policy-entity, read, allow
+    p, role:default/admin, policy-entity, create, allow
+    p, role:default/admin, policy-entity, update, allow
+    p, role:default/admin, policy-entity, delete, allow
+
+    # Permission permissions (meta-permissions)
+    p, role:default/admin, permission.policy.read, read, allow
+    p, role:default/admin, permission.policy.create, create, allow
+    p, role:default/admin, permission.policy.update, update, allow
+    p, role:default/admin, permission.policy.delete, delete, allow
+
+    # Assign admin user to admin role
+    g, user:default/admin, role:default/admin

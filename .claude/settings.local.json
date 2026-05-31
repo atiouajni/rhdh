@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(oc get:*)",
+      "Bash(oc logs:*)",
+      "Bash(oc delete:*)",
+      "Bash(oc describe:*)",
+      "Bash(oc apply:*)",
+      "Bash(curl:*)",
+      "Bash(oc create:*)",
+      "Bash(oc exec:*)",
+      "Bash(oc rollout:*)",
+      "Bash(oc whoami:*)",
+      "Bash(oc project:*)",
+      "Bash(oc patch:*)",
+      "Bash(oc api-resources:*)",
+      "Bash(chmod +x:*)"
+    ]
+  }
+}
