@@ -135,11 +135,24 @@ cp .env.example .env
 Éditez `.env` avec vos valeurs :
 
 ```bash
-# Exemple de valeurs
+# Configuration de base
 export NAMESPACE=rhdh-demo
 export CLUSTER_APPS_DOMAIN=apps.sno4.anissetiouajni.com
+export BACKEND_SECRET=$(openssl rand -base64 32)
+
+# Configuration Keycloak
 export KEYCLOAK_BASE=https://kc-rhbk.apps.sno4.anissetiouajni.com
+export KEYCLOAK_REALM=rhdh
+export KEYCLOAK_CLIENT_ID=rhdh
+export KEYCLOAK_CLIENT_SECRET=my-new-rhdh-secret-12345
+
+# Configuration AAP (pour la branche rhdh-oidc-ansible uniquement)
+export AAP_BASE_URL=https://your-aap-controller.example.com
+export AAP_TOKEN=your-aap-personal-access-token
+export AAP_CHECK_SSL=true
 ```
+
+⚠️ **Note** : Les variables AAP ne sont nécessaires que si vous utilisez la branche `rhdh-oidc-ansible` avec le plugin Ansible Automation Platform.
 
 #### 3. Charger les variables
 
