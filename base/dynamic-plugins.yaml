@@ -12,3 +12,40 @@ data:
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-community-plugin-rbac
         disabled: false
+      - disabled: false
+        package: >-
+          oci://quay.io/atiouajn/automation-portal:2.2.0-1779723113!ansible-plugin-backstage-rhaap
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              ansible.plugin-backstage-rhaap:
+                appIcons:
+                  - importName: AnsibleLogo
+                    name: AnsibleLogo
+                dynamicRoutes:
+                  - importName: AnsiblePage
+                    menuItem:
+                      icon: AnsibleLogo
+                      text: Ansible
+                    path: /ansible
+      - disabled: false
+        package: >-
+          oci://quay.io/atiouajn/automation-portal:2.2.0-1779723113!ansible-plugin-backstage-self-service
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              ansible.plugin-backstage-self-service:
+                scaffolderFieldExtensions:
+                  - importName: AAPTokenFieldExtension
+                  - importName: AAPResourcePickerExtension
+      - disabled: false
+        package: >-
+          oci://quay.io/atiouajn/automation-portal:2.2.0-1779723113!ansible-backstage-plugin-catalog-backend-module-rhaap
+        pluginConfig: {}
+      - disabled: false
+        package: >-
+          oci://quay.io/atiouajn/automation-portal:2.2.0-1779723113!ansible-plugin-scaffolder-backend-module-backstage-rhaap
+        pluginConfig:
+          dynamicPlugins:
+            backend:
+              ansible.plugin-scaffolder-backend-module-backstage-rhaap:
