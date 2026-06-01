@@ -274,29 +274,36 @@ La configuration inclut :
 
 ### Personnalisation
 
-Pour utiliser votre propre instance AAP, modifiez les valeurs dans `base/app-config.yaml` :
+Pour utiliser votre propre instance AAP, configurez les variables dans votre fichier `.env` :
 
-```yaml
-ansible:
-  rhaap:
-    baseUrl: 'https://votre-controller.example.com'
-    token: 'votre-token-aap'
-    checkSSL: true
+```bash
+export AAP_BASE_URL=https://votre-controller.example.com
+export AAP_TOKEN=votre-token-aap
+export AAP_CHECK_SSL=true
+```
+
+Puis redéployez :
+```bash
+source .env
+./install.sh
 ```
 
 ## 📝 Variables d'environnement
 
 
-| Variable                 | Description                            | Exemple                                                                    |
-| ------------------------ | -------------------------------------- | -------------------------------------------------------------------------- |
-| `NAMESPACE`              | Namespace OpenShift                    | `rhdh-demo`                                                                |
-| `CLUSTER_APPS_DOMAIN`    | Domaine des apps du cluster            | `apps.sno4.anissetiouajni.com`                                             |
-| `BACKEND_SECRET`         | Secret pour l'authentification backend | Généré avec `openssl rand -base64 32`                                      |
-| `KEYCLOAK_BASE`          | URL de base Keycloak                   | `https://keycloak.example.com`                                             |
-| `KEYCLOAK_REALM`         | Nom du realm Keycloak                  | `rhdh`                                                                     |
-| `KEYCLOAK_CLIENT_ID`     | ID du client Keycloak                  | `rhdh`                                                                     |
-| `KEYCLOAK_CLIENT_SECRET` | Secret du client Keycloak              | `xxxxx`                                                                    |
-| `APP_BASE_URL`           | URL de l'application (auto-construite) | Calculé: `https://backstage-backstage-${NAMESPACE}.${CLUSTER_APPS_DOMAIN}` |
+| Variable                 | Description                                           | Exemple                                                                    |
+| ------------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------- |
+| `NAMESPACE`              | Namespace OpenShift                                   | `rhdh-demo`                                                                |
+| `CLUSTER_APPS_DOMAIN`    | Domaine des apps du cluster                           | `apps.sno4.anissetiouajni.com`                                             |
+| `BACKEND_SECRET`         | Secret pour l'authentification backend                | Généré avec `openssl rand -base64 32`                                      |
+| `KEYCLOAK_BASE`          | URL de base Keycloak                                  | `https://keycloak.example.com`                                             |
+| `KEYCLOAK_REALM`         | Nom du realm Keycloak                                 | `rhdh`                                                                     |
+| `KEYCLOAK_CLIENT_ID`     | ID du client Keycloak                                 | `rhdh`                                                                     |
+| `KEYCLOAK_CLIENT_SECRET` | Secret du client Keycloak                             | `xxxxx`                                                                    |
+| `AAP_BASE_URL`           | URL du controller AAP (branche rhdh-oidc-ansible)     | `https://your-aap-controller.example.com`                                  |
+| `AAP_TOKEN`              | Token d'accès personnel AAP (branche rhdh-oidc-ansible) | `your-aap-personal-access-token`                                           |
+| `AAP_CHECK_SSL`          | Vérifier les certificats SSL AAP (branche rhdh-oidc-ansible) | `true` ou `false`                                                          |
+| `APP_BASE_URL`           | URL de l'application (auto-construite)                | Calculé: `https://backstage-backstage-${NAMESPACE}.${CLUSTER_APPS_DOMAIN}` |
 
 
 ## 🔐 Sécurité
