@@ -262,9 +262,9 @@ La configuration inclut :
        baseUrl: 127.0.0.1
        port: '8000'
      rhaap:
-       baseUrl: '<https://MyControllerUrl>'
-       token: '<AAP Personal Access Token>'
-       checkSSL: true
+       baseUrl: ${AAP_BASE_URL}
+       token: ${AAP_TOKEN}
+       checkSSL: ${AAP_CHECK_SSL}
    ```
 
 ### Utiliser le plugin Ansible
