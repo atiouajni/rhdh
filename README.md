@@ -28,10 +28,12 @@ Pour éviter d'avoir à gérer l'authentification au registry Red Hat (`registry
 
 ### Images utilisées
 
-| Image Red Hat (source)                                                                                   | Image publique (destination)                                            | Usage                          |
-| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------ |
-| `registry.redhat.io/ansible-automation-platform/automation-portal:2.2.0-1779723113`                      | `quay.io/atiouajn/automation-portal:2.2.0-1779723113`                   | Portail Ansible (non utilisé)  |
-| `registry.redhat.io/ansible-automation-platform-27/ansible-dev-tools-rhel9:26.4.6-1779106965` | `quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-1779106965` | Ansible Dev Tools (sidecar)    |
+
+| Image Red Hat (source)                                                                        | Image publique (destination)                                 | Usage                         |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------- |
+| `registry.redhat.io/ansible-automation-platform/automation-portal:2.2.0-1779723113`           | `quay.io/atiouajn/automation-portal:2.2.0-1779723113`        | Portail Ansible (non utilisé) |
+| `registry.redhat.io/ansible-automation-platform-27/ansible-dev-tools-rhel9:26.4.6-1779106965` | `quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-1779106965` | Ansible Dev Tools (sidecar)   |
+
 
 ### Comment copier les images
 
@@ -57,11 +59,13 @@ podman push --remove-signatures quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-
 ```
 
 **Notes importantes :**
+
 - `--platform linux/amd64` : Force l'architecture compatible avec OpenShift
 - `--remove-signatures` : Nécessaire car les signatures Red Hat ne peuvent pas être transférées
 - Les images doivent être rendues **publiques** sur Quay.io pour éviter de configurer des pull secrets
 
 ⚠️ **Considérations de licence :**
+
 - Assurez-vous d'avoir le droit d'utiliser ces images selon votre abonnement Red Hat
 - Cette approche est recommandée pour les environnements de dev/test
 - En production, utilisez plutôt des pull secrets configurés sur le cluster
@@ -193,6 +197,7 @@ oc get route -n ${NAMESPACE}
 ### Import du Realm RHDH
 
 Le fichier `keycloak-rhdh-realm-simple.json` contient une configuration complète pour RHDH incluant :
+
 - Un realm `rhdh` pré-configuré
 - Un utilisateur admin de test
 - Un client OIDC `rhdh` avec les bons paramètres
@@ -208,17 +213,20 @@ Le fichier `keycloak-rhdh-realm-simple.json` contient une configuration complèt
 ### Credentials créés par l'import
 
 #### Utilisateur Admin (pour tester RHDH)
+
 - **Username:** `admin`
 - **Password:** `admin123`
 - **Email:** `admin@example.com`
 - **Nom complet:** Admin User
 
 #### Client OIDC
+
 - **Client ID:** `rhdh`
 - **Client Secret:** `my-new-rhdh-secret-12345`
 - **Redirect URIs:** `*` (configuré pour accepter toutes les URLs)
 
 ⚠️ **IMPORTANT - Sécurité :**
+
 - Ces credentials sont pour **DEV/TEST uniquement**
 - En production :
   - Changez le mot de passe admin
@@ -230,6 +238,7 @@ Le fichier `keycloak-rhdh-realm-simple.json` contient une configuration complèt
 ### Service Account
 
 Un service account `service-account-rhdh` est automatiquement créé avec les permissions suivantes :
+
 - `view-users` : Lecture des utilisateurs
 - `view-clients` : Lecture des clients
 - `view-realm` : Lecture du realm
@@ -247,43 +256,39 @@ Le plugin Ansible AAP est configuré sur la branche `rhdh-oidc-ansible` et perme
 La configuration inclut :
 
 1. **Templates Ansible depuis GitHub** :
-   - Location: `https://github.com/ansible/ansible-rhdh-templates/blob/main/all.yaml`
-   - Types autorisés: `Template`
-
+  - Location: `https://github.com/ansible/ansible-rhdh-templates/blob/main/all.yaml`
+  - Types autorisés: `Template`
 2. **Ansible Dev Tools en sidecar** :
-   - Image: `quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-1779106965`
-   - Service exposé sur le port `8000`
-   - Commande: `adt server`
-
+  - Image: `quay.io/atiouajn/ansible-dev-tools-rhel9:26.4.6-1779106965`
+  - Service exposé sur le port `8000`
+  - Commande: `adt server`
 3. **Configuration AAP** :
-   ```yaml
+  ```yaml
    ansible:
      creatorService:
        baseUrl: 127.0.0.1
        port: '8000'
      rhaap:
-       baseUrl: ${AAP_BASE_URL}
-       token: ${AAP_TOKEN}
-       checkSSL: ${AAP_CHECK_SSL}
-   ```
+       baseUrl: '<https://MyControllerUrl>'
+       token: '<AAP Personal Access Token>'
+       checkSSL: true
+  ```
 
 ### Utiliser le plugin Ansible
 
 1. Checkout de la branche avec le plugin :
-   ```bash
+  ```bash
    git checkout rhdh-oidc-ansible
-   ```
-
+  ```
 2. Installer/mettre à jour RHDH :
-   ```bash
+  ```bash
    source .env
    ./install.sh
-   ```
-
+  ```
 3. Accéder aux templates Ansible :
-   - Ouvrir RHDH dans votre navigateur
-   - Naviguer vers "Create" dans le menu
-   - Les templates Ansible apparaîtront dans la liste
+  - Ouvrir RHDH dans votre navigateur
+  - Naviguer vers "Create" dans le menu
+  - Les templates Ansible apparaîtront dans la liste
 
 ### Personnalisation
 
@@ -296,6 +301,7 @@ export AAP_CHECK_SSL=true
 ```
 
 Puis redéployez :
+
 ```bash
 source .env
 ./install.sh
@@ -304,19 +310,19 @@ source .env
 ## 📝 Variables d'environnement
 
 
-| Variable                 | Description                                           | Exemple                                                                    |
-| ------------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------- |
-| `NAMESPACE`              | Namespace OpenShift                                   | `rhdh-demo`                                                                |
-| `CLUSTER_APPS_DOMAIN`    | Domaine des apps du cluster                           | `apps.sno4.anissetiouajni.com`                                             |
-| `BACKEND_SECRET`         | Secret pour l'authentification backend                | Généré avec `openssl rand -base64 32`                                      |
-| `KEYCLOAK_BASE`          | URL de base Keycloak                                  | `https://keycloak.example.com`                                             |
-| `KEYCLOAK_REALM`         | Nom du realm Keycloak                                 | `rhdh`                                                                     |
-| `KEYCLOAK_CLIENT_ID`     | ID du client Keycloak                                 | `rhdh`                                                                     |
-| `KEYCLOAK_CLIENT_SECRET` | Secret du client Keycloak                             | `xxxxx`                                                                    |
-| `AAP_BASE_URL`           | URL du controller AAP (branche rhdh-oidc-ansible)     | `https://your-aap-controller.example.com`                                  |
-| `AAP_TOKEN`              | Token d'accès personnel AAP (branche rhdh-oidc-ansible) | `your-aap-personal-access-token`                                           |
+| Variable                 | Description                                                  | Exemple                                                                    |
+| ------------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `NAMESPACE`              | Namespace OpenShift                                          | `rhdh-demo`                                                                |
+| `CLUSTER_APPS_DOMAIN`    | Domaine des apps du cluster                                  | `apps.sno4.anissetiouajni.com`                                             |
+| `BACKEND_SECRET`         | Secret pour l'authentification backend                       | Généré avec `openssl rand -base64 32`                                      |
+| `KEYCLOAK_BASE`          | URL de base Keycloak                                         | `https://keycloak.example.com`                                             |
+| `KEYCLOAK_REALM`         | Nom du realm Keycloak                                        | `rhdh`                                                                     |
+| `KEYCLOAK_CLIENT_ID`     | ID du client Keycloak                                        | `rhdh`                                                                     |
+| `KEYCLOAK_CLIENT_SECRET` | Secret du client Keycloak                                    | `xxxxx`                                                                    |
+| `AAP_BASE_URL`           | URL du controller AAP (branche rhdh-oidc-ansible)            | `https://your-aap-controller.example.com`                                  |
+| `AAP_TOKEN`              | Token d'accès personnel AAP (branche rhdh-oidc-ansible)      | `your-aap-personal-access-token`                                           |
 | `AAP_CHECK_SSL`          | Vérifier les certificats SSL AAP (branche rhdh-oidc-ansible) | `true` ou `false`                                                          |
-| `APP_BASE_URL`           | URL de l'application (auto-construite)                | Calculé: `https://backstage-backstage-${NAMESPACE}.${CLUSTER_APPS_DOMAIN}` |
+| `APP_BASE_URL`           | URL de l'application (auto-construite)                       | Calculé: `https://backstage-backstage-${NAMESPACE}.${CLUSTER_APPS_DOMAIN}` |
 
 
 ## 🔐 Sécurité
@@ -337,9 +343,17 @@ oc delete namespace ${NAMESPACE}
 
 ## 📚 Ressources
 
-- [Red Hat Developer Hub Documentation](https://access.redhat.com/documentation/en-us/red_hat_developer_hub)
+### Documentation Red Hat Developer Hub
+
+- [RHDH - Configuring authentication with OIDC/Keycloak](https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.9/html/authentication_in_red_hat_developer_hub/import-users-and-groups-from-your-identity-provider_authentication-in-rhdh#import-users-and-groups-from-rhbk_import-users-and-groups-from-your-identity-provider)
+- [RHDH - Ansible Automation Platform plugin](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.7/extend-assembly_rhdh_install)
+- [RHDH - Dynamic Plugins](https://docs.redhat.com/en/documentation/red_hat_developer_hub/1.9/html/configuring_dynamic_plugins/index)
+
+### Autres ressources
+
 - [Backstage Documentation](https://backstage.io/docs)
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
+- [Ansible AAP Templates (GitHub)](https://github.com/ansible/ansible-rhdh-templates)
 
 ## 🐛 Troubleshooting
 
