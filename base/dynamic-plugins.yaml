@@ -1,3 +1,5 @@
+# Les plugins par défaut viennent du catalog index RHDH (images OCI).
+# On les active avec ref://<nom-image>.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,7 +10,46 @@ data:
     includes:
       - dynamic-plugins.default.yaml
     plugins:
-      - package: './dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic'
-        disabled: false
-      - package: ./dynamic-plugins/dist/backstage-community-plugin-rbac
-        disabled: false
+      # Authentification OIDC (désactivée par défaut dans le catalog index)
+      - package: ref://backstage-plugin-auth-backend-module-oidc-provider
+        enabled: true
+        pluginConfig:
+          auth:
+            providers:
+              oidc:
+                production:
+                  metadataUrl: ${OIDC_METADATA_URL}
+                  clientId: ${OIDC_CLIENT_ID}
+                  clientSecret: ${OIDC_CLIENT_SECRET}
+                  prompt: auto
+                  additionalScopes:
+                    - profile
+                    - email
+                  signIn:
+                    resolvers:
+                      - resolver: emailLocalPartMatchingUserEntityName
+
+      # Synchronisation des utilisateurs / groupes Keycloak dans le catalogue
+      - package: ref://backstage-community-plugin-catalog-backend-module-keycloak
+        enabled: true
+        pluginConfig:
+          catalog:
+            providers:
+              keycloakOrg:
+                default:
+                  baseUrl: ${KEYCLOAK_BASE_URL}
+                  loginRealm: ${KEYCLOAK_LOGIN_REALM}
+                  realm: ${KEYCLOAK_REALM}
+                  clientId: ${KEYCLOAK_CLIENT_ID}
+                  clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+                  schedule:
+                    frequency:
+                      minutes: 1
+                    timeout:
+                      minutes: 1
+                    initialDelay:
+                      seconds: 15
+
+      # Interface d'administration RBAC
+      - package: ref://backstage-community-plugin-rbac
+        enabled: true

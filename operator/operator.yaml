@@ -1,0 +1,25 @@
+# L'opérateur RHDH ne supporte que le mode AllNamespaces :
+# namespace dédié + OperatorGroup sans targetNamespaces.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rhdh-operator
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: rhdh-operator
+  namespace: rhdh-operator
+spec: {}
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: rhdh
+  namespace: rhdh-operator
+spec:
+  channel: fast-2.1          # "fast" pointe sur la 1.10.x
+  name: rhdh
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic

@@ -1,116 +1,78 @@
 #!/bin/bash
+# Installation de Red Hat Developer Hub 2.1 avec authentification Keycloak/OIDC.
+# Usage : ./install.sh [-y]   (-y : pas de confirmation)
+set -euo pipefail
 
-set -e
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
+info()    { echo -e "${GREEN}[INFO]${NC} $1"; }
+error()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 
-# Couleurs pour les messages
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+ASSUME_YES=false
+[[ "${1:-}" == "-y" ]] && ASSUME_YES=true
+cd "$(dirname "$0")"
 
-# Fonction pour afficher les messages
-info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-    exit 1
-}
-
-warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-# Vérifier les prérequis
 info "Vérification des prérequis..."
+command -v oc >/dev/null 2>&1       || error "oc CLI n'est pas installé"
+command -v envsubst >/dev/null 2>&1 || error "envsubst n'est pas installé (package gettext)"
+oc whoami >/dev/null 2>&1           || error "Non connecté à OpenShift. Utilisez 'oc login' d'abord."
 
-command -v oc >/dev/null 2>&1 || error "oc CLI n'est pas installé"
-command -v envsubst >/dev/null 2>&1 || error "envsubst n'est pas installé (installez le package gettext)"
-
-# Vérifier que l'utilisateur est connecté à OpenShift
-oc whoami >/dev/null 2>&1 || error "Vous n'êtes pas connecté à OpenShift. Utilisez 'oc login' d'abord."
-
-# Charger les variables d'environnement
 if [ ! -f .env ]; then
-    warning "Le fichier .env n'existe pas. Utilisation de .env.example..."
-    if [ ! -f .env.example ]; then
-        error "Aucun fichier .env ou .env.example trouvé"
-    fi
     cp .env.example .env
-    warning "Fichier .env créé. Veuillez le modifier si nécessaire et relancer le script."
+    warning "Fichier .env créé depuis .env.example : complétez-le puis relancez le script."
     exit 0
 fi
-
-info "Chargement des variables d'environnement depuis .env..."
+info "Chargement des variables depuis .env..."
+# shellcheck disable=SC1091
 source .env
 
-# Vérifier que les variables sont définies
-REQUIRED_VARS=(
-    "NAMESPACE"
-    "CLUSTER_APPS_DOMAIN"
-    "BACKEND_SECRET"
-    "KEYCLOAK_BASE"
-    "KEYCLOAK_REALM"
-    "KEYCLOAK_CLIENT_ID"
-    "KEYCLOAK_CLIENT_SECRET"
-)
-
-for var in "${REQUIRED_VARS[@]}"; do
-    if [ -z "${!var}" ]; then
-        error "La variable $var n'est pas définie dans .env"
-    fi
+for var in NAMESPACE CLUSTER_APPS_DOMAIN BACKEND_SECRET KEYCLOAK_BASE KEYCLOAK_REALM KEYCLOAK_CLIENT_ID KEYCLOAK_CLIENT_SECRET; do
+    [ -n "${!var:-}" ] || error "La variable $var n'est pas définie dans .env"
 done
+export NAMESPACE
+export APP_BASE_URL="https://backstage-backstage-${NAMESPACE}.${CLUSTER_APPS_DOMAIN}"
 
-# Construire APP_BASE_URL automatiquement
-export APP_BASE_URL=https://backstage-backstage-${NAMESPACE}.${CLUSTER_APPS_DOMAIN}
-
-info "Configuration:"
-echo "  - Namespace: $NAMESPACE"
-echo "  - Domaine: $CLUSTER_APPS_DOMAIN"
-echo "  - Keycloak: $KEYCLOAK_BASE"
-echo "  - App URL: $APP_BASE_URL"
-
-# Demander confirmation
-read -p "Continuer avec cette configuration? (y/n) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    warning "Installation annulée"
-    exit 0
+info "Configuration :"
+echo "  - Namespace : $NAMESPACE"
+echo "  - Keycloak  : $KEYCLOAK_BASE (realm $KEYCLOAK_REALM)"
+echo "  - URL RHDH  : $APP_BASE_URL"
+if ! $ASSUME_YES; then
+    read -p "Continuer avec cette configuration ? (y/n) " -n 1 -r; echo
+    [[ $REPLY =~ ^[Yy]$ ]] || { warning "Installation annulée"; exit 0; }
 fi
 
-# Vérifier que le namespace existe
-info "Vérification du namespace..."
-if ! oc get project $NAMESPACE >/dev/null 2>&1; then
-    error "Le namespace $NAMESPACE n'existe pas. Créez-le d'abord avec: oc new-project $NAMESPACE"
-fi
+info "Vérification de l'opérateur RHDH (namespace rhdh-operator)..."
+oc get csv -n rhdh-operator 2>/dev/null | grep rhdh-operator | grep -q Succeeded \
+    || error "Opérateur RHDH absent ou pas prêt. Installez-le : oc apply -k operator/"
+info "✓ $(oc get csv -n rhdh-operator -o name | grep rhdh-operator)"
 
-# Vérifier que le RHDH Operator est installé dans le namespace
-info "Vérification de l'installation du RHDH Operator dans le namespace $NAMESPACE..."
-if ! oc get csv -n $NAMESPACE | grep -q rhdh-operator 2>/dev/null; then
-    error "Le RHDH Operator n'est pas installé dans le namespace $NAMESPACE. Installez-le depuis OperatorHub avant de continuer."
-fi
-info "✓ RHDH Operator détecté"
+info "Namespace $NAMESPACE..."
+oc create namespace "$NAMESPACE" --dry-run=client -o yaml | oc apply -f - >/dev/null
 
-# Déployer les ressources
+info "Secret rhdh-secrets (lu par RHDH au runtime, jamais écrit dans les ConfigMaps)..."
+oc -n "$NAMESPACE" create secret generic rhdh-secrets \
+    --from-literal=BACKEND_SECRET="$BACKEND_SECRET" \
+    --from-literal=OIDC_METADATA_URL="${KEYCLOAK_BASE}/realms/${KEYCLOAK_REALM}/.well-known/openid-configuration" \
+    --from-literal=OIDC_CLIENT_ID="$KEYCLOAK_CLIENT_ID" \
+    --from-literal=OIDC_CLIENT_SECRET="$KEYCLOAK_CLIENT_SECRET" \
+    --from-literal=KEYCLOAK_BASE_URL="$KEYCLOAK_BASE" \
+    --from-literal=KEYCLOAK_LOGIN_REALM="$KEYCLOAK_REALM" \
+    --from-literal=KEYCLOAK_REALM="$KEYCLOAK_REALM" \
+    --from-literal=KEYCLOAK_CLIENT_ID="$KEYCLOAK_CLIENT_ID" \
+    --from-literal=KEYCLOAK_CLIENT_SECRET="$KEYCLOAK_CLIENT_SECRET" \
+    --dry-run=client -o yaml | oc apply -f -
+
 info "Déploiement des ressources..."
-oc kustomize ./base | envsubst | oc apply -f -
+# Substitution limitée : les autres ${VAR} doivent rester pour être résolues par RHDH
+oc kustomize ./base | envsubst '$NAMESPACE $APP_BASE_URL' | oc apply -f -
 
-# Attendre que les ressources soient prêtes
-info "Attente du démarrage de RHDH..."
-oc wait --for=condition=Deployed backstage/backstage -n $NAMESPACE --timeout=10m || warning "Timeout en attendant RHDH"
+info "Attente du démarrage de RHDH (jusqu'à 10 min)..."
+oc -n "$NAMESPACE" wait --for=condition=Deployed backstage/backstage --timeout=10m \
+    || warning "Timeout en attendant RHDH"
+oc -n "$NAMESPACE" rollout status deployment/backstage-backstage --timeout=10m \
+    || warning "Le déploiement n'est pas encore prêt"
 
-# Afficher le statut
-info "Statut du déploiement:"
-oc get pods -n $NAMESPACE
-
-# Afficher l'URL d'accès
-info ""
-info "✅ Déploiement terminé avec succès!"
-info ""
-info "URL d'accès RHDH: $APP_BASE_URL"
-info ""
-info "Commandes utiles:"
-echo "  - Voir les logs: oc logs -f deployment/backstage-backstage -n $NAMESPACE"
-echo "  - Voir les pods: oc get pods -n $NAMESPACE"
-echo "  - Voir la route: oc get route -n $NAMESPACE"
+oc get pods -n "$NAMESPACE"
+info "✅ Déploiement terminé. URL : $APP_BASE_URL"
+echo "  - Logs : oc logs -f deployment/backstage-backstage -n $NAMESPACE"
+echo "  - Plugins installés : oc logs deployment/backstage-backstage -n $NAMESPACE -c install-dynamic-plugins"

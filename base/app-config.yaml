@@ -1,3 +1,5 @@
+# Seuls ${NAMESPACE} et ${APP_BASE_URL} sont substitués à l'installation (envsubst).
+# Les autres ${VAR} sont résolues au runtime par RHDH depuis le Secret rhdh-secrets.
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -23,38 +25,13 @@ data:
       environment: production
       session:
         secret: ${BACKEND_SECRET}
-      providers:
-        oidc:
-          production:
-            metadataUrl: ${KEYCLOAK_BASE}/realms/${KEYCLOAK_REALM}/.well-known/openid-configuration
-            clientId: ${KEYCLOAK_CLIENT_ID}
-            clientSecret: ${KEYCLOAK_CLIENT_SECRET}
-            prompt: auto
-            additionalScopes:
-              - profile
-              - email
-            signIn:
-              resolvers:
-                - resolver: emailLocalPartMatchingUserEntityName
+      # Provider OIDC : configuré dans dynamic-plugins.yaml
 
     catalog:
       rules:
         - allow: [Component, System, API, Resource, Location, User, Group]
-      providers:
-        keycloakOrg:
-          default:
-            baseUrl: ${KEYCLOAK_BASE}
-            loginRealm: ${KEYCLOAK_REALM}
-            realm: ${KEYCLOAK_REALM}
-            clientId: ${KEYCLOAK_CLIENT_ID}
-            clientSecret: ${KEYCLOAK_CLIENT_SECRET}
-            schedule:
-              frequency:
-                minutes: 1
-              timeout:
-                minutes: 1
-              initialDelay:
-                seconds: 15
+      # Synchro Keycloak : configurée dans dynamic-plugins.yaml
+
     permission:
       enabled: true
       rbac:
