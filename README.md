@@ -1,8 +1,15 @@
 # Red Hat Developer Hub 2.1 avec authentification Keycloak/OIDC - Installation avec Kustomize
 
-Ce dépôt contient les manifests Kubernetes pour déployer Red Hat Developer Hub (RHDH) **2.1** avec authentification Keycloak.
+![Red Hat Developer Hub](https://img.shields.io/badge/Red_Hat_Developer_Hub-2.1-EE0000?style=for-the-badge&logo=redhat&logoColor=white)
+![OpenShift](https://img.shields.io/badge/OpenShift-4.22-EE0000?style=for-the-badge&logo=redhatopenshift&logoColor=white)
+![Red Hat build of Keycloak](https://img.shields.io/badge/RHBK-26.6-4D4D4D?style=for-the-badge&logo=keycloak&logoColor=white)
 
-> 📌 La configuration pour RHDH 1.9 est disponible dans la branche [`rhdh-1.9`](../../tree/rhdh-1.9).
+Ce dépôt contient les manifests Kubernetes pour déployer Red Hat Developer Hub (RHDH) avec authentification Keycloak.
+
+> [!IMPORTANT]
+> **Version : Red Hat Developer Hub 2.1** (opérateur `rhdh-operator.v2.1.0`, canal `fast-2.1`)
+>
+> La configuration pour RHDH 1.9 est disponible dans la branche [`rhdh-1.9`](../../tree/rhdh-1.9).
 
 ## Fonctionnalités incluses
 
